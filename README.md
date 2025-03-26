@@ -1,70 +1,42 @@
-# code-with-quarkus
+# Quarkus Entity Relationship Test Reproduction
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+This repository demonstrates a test case for bidirectional relationships between entities in a Quarkus application using Hibernate ORM with Panache.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+## Overview
 
-## Running the application in dev mode
+The test case illustrates an issue with clearing bidirectional relationships between project entities. The test creates a chain of three connected projects and then attempts to disconnect the middle project from both its incoming and outgoing relationships.
 
-You can run your application in dev mode that enables live coding using:
+## Test Case Description
 
-```shell script
-./mvnw quarkus:dev
+The test creates the following scenario:
+
+1. Three project entities are created (PE1, PE2, PE3)
+2. Relationships are established: PE1 → PE2 → PE3
+3. The test then attempts to disconnect PE2 from both its relationships
+4. The test verifies that PE2 has no remaining relationships
+
+## Issue Demonstrated
+
+The test fails because when clearing both the outgoing and incoming relationships collections without an explicit ```persistAndFlush()``` call between them, the changes aren't properly synchronized with the database.
+
+As noted in the code comment, uncommenting the ```project.persistAndFlush()``` line after clearing the outgoing relationships makes the test pass.
+
+## Entity Structure
+
+The test involves the following entities:
+- ```ProjectEntity```: The main entity with bidirectional relationships
+- ```ProjectRelationship```: A join entity representing the relationship between projects
+- ```ProjectRelationshipId```: A composite key for the relationship
+- ```RelationshipType```: An enum defining the type of relationship
+
+## How to Run
+
+Execute the test using:
+
+```bash
+./mvnw test -Dtest=ProjectRelationshipTest
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+## Expected Behavior
 
-## Packaging and running the application
-
-The application can be packaged using:
-
-```shell script
-./mvnw package
-```
-
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
-
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
-
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
-```
-
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
-
-## Creating a native executable
-
-You can create a native executable using:
-
-```shell script
-./mvnw package -Dnative
-```
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
-
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
-
-You can then execute your native executable with: `./target/code-with-quarkus-1.0.0-SNAPSHOT-runner`
-
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
-
-## Related Guides
-
-- Hibernate ORM with Panache ([guide](https://quarkus.io/guides/hibernate-orm-panache)): Simplify your persistence code for Hibernate ORM via the active record or the repository pattern
-- JDBC Driver - PostgreSQL ([guide](https://quarkus.io/guides/datasource)): Connect to the PostgreSQL database via JDBC
-
-## Provided Code
-
-### Hibernate ORM
-
-Create your first JPA entity
-
-[Related guide section...](https://quarkus.io/guides/hibernate-orm)
-
-[Related Hibernate with Panache section...](https://quarkus.io/guides/hibernate-orm-panache)
-
+When properly implemented, a project entity should be able to clear both its incoming and outgoing relationships, leaving it completely disconnected from other projects, without having to manually call ```persistAndFlush()``` between them.
